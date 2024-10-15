@@ -59,6 +59,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>" 
       - name: Build Socotra
+        working-directory: ${{ env.repo_dir }}
         run: bash ./.github/generate_builds.sh
         env:
           REPO_DIR: ${{ env.repo_dir }}
