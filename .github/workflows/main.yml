@@ -52,8 +52,8 @@ jobs:
       - name: configure git
         run: |
           # setup the username and email.
-          git --version
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
+          git -c socotra-source-code-build --version
+          git config user.name "GitHub Actions Bot" -c socotra-source-code-build
+          git config user.email "<>" -c socotra-source-code-build
           echo "${{ secrets.API_KEY }}"
           echo "${{ vars.ENV_VAR_1 }}"
