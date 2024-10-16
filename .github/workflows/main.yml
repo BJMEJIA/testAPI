@@ -24,7 +24,7 @@ on:
         type: boolean
         description: Version 15
         default: false
-
+        
 permissions:
   contents: read
   checks: write
@@ -54,6 +54,8 @@ jobs:
             echo "Branch is not valid" >&2
             exit 1
           fi
+
+          echo ${{ github.event.inputs }}
 
   build:
     runs-on: ubuntu-latest
