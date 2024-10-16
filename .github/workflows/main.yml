@@ -58,7 +58,7 @@ jobs:
 
           readarray -t NEED_TO_BUILD < <(echo '${{ ToJSON(github.event.inputs) }}' | jq -r 'to_entries | map(select(.value == "true")) | .[].key')
 
-          echo "versions=${NEED_TO_BUILD}" >> $GITHUB_OUTPUT 
+          echo "versions=${NEED_TO_BUILD[@]}" >> $GITHUB_OUTPUT 
 
   build:
     runs-on: ubuntu-latest
