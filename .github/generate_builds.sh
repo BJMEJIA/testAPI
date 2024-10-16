@@ -14,4 +14,6 @@ done
 
 clear_repo
 
+unzip --help
+
 git checkout main
