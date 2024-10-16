@@ -55,7 +55,9 @@ jobs:
             exit 1
           fi
 
-          echo '${{ ToJSON(github.event.inputs) }}' | jq -r 'to_entries | map(select(.value == "true")) | .[].key' 
+          readarray -t NEED_TO_BUILD < <(echo '${{ ToJSON(github.event.inputs) }}' | jq -r 'to_entries | map(select(.value == "true")) | .[].key')
+
+          echo "${NEED_TO_BUILD[@]}"
 
   build:
     runs-on: ubuntu-latest
