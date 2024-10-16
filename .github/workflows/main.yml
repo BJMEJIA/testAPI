@@ -55,7 +55,7 @@ jobs:
             exit 1
           fi
 
-          echo "${{ github.event.inputs }}"
+          echo "${{ ToJSON(github.event.inputs) }}"
 
   build:
     runs-on: ubuntu-latest
