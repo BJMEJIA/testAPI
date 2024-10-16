@@ -55,7 +55,7 @@ jobs:
             exit 1
           fi
 
-          jq -r 'to_entries | map(select(.value == true)) | .[].key' "${{ ToJSON(github.event.inputs) }}"
+          echo "${{ ToJSON(github.event.inputs) }}" | jq -r 'to_entries | map(select(.value == true)) | .[].key' 
 
   build:
     runs-on: ubuntu-latest
