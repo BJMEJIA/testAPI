@@ -81,7 +81,7 @@ jobs:
       - name: Build Socotra
         run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh
         env:
-          SELECTED_VERSIONS: ${{ ToJSON(github.event.inputs) }}
+          SELECTED_VERSIONS: '${{ ToJSON(github.event.inputs) }}'
 
           
         
