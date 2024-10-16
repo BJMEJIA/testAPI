@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       env: ${{ steps.configure-environment.outputs.env }}
+      NEED_TO_BUILD: ${{ steps.configure-environment.outputs.versions }}
     steps:
       - id: configure-environment
         name: Configure environment
@@ -57,7 +58,7 @@ jobs:
 
           readarray -t NEED_TO_BUILD < <(echo '${{ ToJSON(github.event.inputs) }}' | jq -r 'to_entries | map(select(.value == "true")) | .[].key')
 
-          echo "${NEED_TO_BUILD[@]}"
+          echo "versions=${NEED_TO_BUILD}" >> $GITHUB_OUTPUT 
 
   build:
     runs-on: ubuntu-latest
@@ -78,6 +79,8 @@ jobs:
           git --version
           git config user.name "GitHub Actions Bot"
           git config user.email "<>" 
+
+          echo "${{ needs.configure.outputs.NEED_TO_BUILD }}"
       - name: Build Socotra
         run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh
 
