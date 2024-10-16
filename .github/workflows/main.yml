@@ -80,7 +80,8 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>" 
 
-          echo "${{ needs.configure.outputs.NEED_TO_BUILD }}"
+          VERSIONS=${{ needs.configure.outputs.NEED_TO_BUILD }}
+          echo "${VERSIONS[@]}"
       - name: Build Socotra
         run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh
 
