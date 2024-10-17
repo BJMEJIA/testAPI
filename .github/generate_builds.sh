@@ -8,11 +8,11 @@ cd "$REPO_DIR"
 
 SELECTED_VERSIONS=".github/versions.json"
 
-echo "$SELECTED_VERSIONS"
+cat "$SELECTED_VERSIONS"
 
 ls -alh
 
-NEED_TO_BUILD=($(echo "$SELECTED_VERSIONS" | jq -r 'to_entries | map(select(.value == "true" )) | .[].key'))
+NEED_TO_BUILD=($(cat "$SELECTED_VERSIONS" | jq -r 'to_entries | map(select(.value == "true" )) | .[].key'))
 
 for i in "${NEED_TO_BUILD[@]}"; do
   echo "We will build version: $i"
