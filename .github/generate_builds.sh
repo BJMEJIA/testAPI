@@ -8,6 +8,8 @@ cd "$REPO_DIR"
 
 SELECTED_VERSIONS=".github/versions.json"
 
+echo "$SELECTED_VERSIONS"
+
 ls -alh
 
 NEED_TO_BUILD=($(echo "$SELECTED_VERSIONS" | jq -r 'to_entries | map(select(.value == "true" )) | .[].key'))
