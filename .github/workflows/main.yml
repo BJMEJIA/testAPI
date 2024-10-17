@@ -8,22 +8,6 @@ on:
         description: Environment
         required: true
         default: Development
-      v12:
-        type: boolean
-        description: Version 12
-        default: false
-      v13:
-        type: boolean
-        description: Version 13
-        default: false
-      v14:
-        type: boolean
-        description: Version 14
-        default: false
-      v15:
-        type: boolean
-        description: Version 15
-        default: false
         
 permissions:
   contents: read
@@ -80,8 +64,6 @@ jobs:
           echo "${VERSIONS[@]}"
       - name: Build Socotra
         run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh
-        env:
-          SELECTED_VERSIONS: '${{ ToJSON(github.event.inputs) }}'
 
           
         
