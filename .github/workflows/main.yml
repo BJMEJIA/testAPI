@@ -63,7 +63,7 @@ jobs:
           VERSIONS=${{ needs.configure.outputs.NEED_TO_BUILD }}
           echo "${VERSIONS[@]}"
       - name: Build Socotra
-        run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh
+        run: bash ${{ env.REPO_DIR }}/.github/generate_builds.sh -u Josue -p password
 
           
         
