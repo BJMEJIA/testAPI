@@ -24,6 +24,12 @@ cat "$SELECTED_VERSIONS"
 
 ls -alh
 
+VERSION_LIST=($(cat "$SELECTED_VERSIONS" | jq -r 'to_entries | .[].key'))
+
+for i in "${VERSION_LIST[@]}"; do
+  echo "$i is in the version list"
+done 
+
 NEED_TO_BUILD=($(cat "$SELECTED_VERSIONS" | jq -r 'to_entries | map(select(.value == "true" )) | .[].key'))
 
 for i in "${NEED_TO_BUILD[@]}"; do
