@@ -15,6 +15,9 @@ permissions:
 
 jobs:
   configure:
+    strategy:
+      matrix:
+        version: ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14"]
     runs-on: ubuntu-latest
     outputs:
       env: ${{ steps.configure-environment.outputs.env }}
@@ -39,6 +42,8 @@ jobs:
             echo "Branch is not valid" >&2
             exit 1
           fi
+
+          echo ${{ matrix.version }}
 
   build:
     runs-on: ubuntu-latest
