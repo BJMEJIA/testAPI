@@ -50,4 +50,4 @@ jobs:
 
       - name: Exec command on Pod
         run: |
-          kubectl exec -ti deployment/${{ github.event.inputs.deployment }} -n ${{ env.NAMESPACE }} -- python manage.py ${{ github.event.inputs.deployment }}
+          kubectl exec -ti deployment/${{ github.event.inputs.deployment }} -n ${{ env.NAMESPACE }} -- python manage.py ${{ github.event.inputs.command }}
