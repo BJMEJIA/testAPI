@@ -3,11 +3,19 @@ name: Exec commands on Pods
 on:
   workflow_dispatch:
     inputs:
-      env:
+      command:
         type: text
         description: command
         required: true
         default: "help"
+      deployment:
+        type: text
+        description: "deployment name"
+        required: true
+        options:
+          - "three-backend-celery"
+          - "three-backend-insurance"
+        default: "three-backend-insurance"
 
 permissions:
   contents: read
@@ -25,11 +33,22 @@ jobs:
         uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-      - name: exec commands on Pods
+          resource-group: "SOC-ProdNC-RG"
+          cluster-name: "S0C-Prod-K8s"
+          namespace: "socotra"
+      - name: Prepare Agent
         run: |
+          #install kubectl and kubelogin
           sudo az aks install-cli
-          az aks get-credentials --resource-group SOC-ProdNC-RG --name S0C-Prod-K8s --overwrite-existing
+
+          #Prepare KubeConfig
+          az aks get-credentials --resource-group ${{ vars.resource-group }} --name ${{ vars.cluster-name }} --overwrite-existing
+
+          #Use Kubelogin for authentication
           kubelogin convert-kubeconfig -l azurecli
-          kubectl get namespaces
+
+      - name: Exec command on Pod
+        run: |
+          kubectl exec -ti deployment/${{ github.event.input.deployment }} -n socotra -- python manage.py ${{ github.event.input.deployment }}
 
       
