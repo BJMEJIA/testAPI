@@ -3,34 +3,121 @@ name: Exec commands on Pods
 on:
   workflow_dispatch:
     inputs:
+      env:
+        type: environment
+        description: Environment
+        required: true
+        default: 'development'
       command:
         type: text
         description: command
         required: true
         default: "help"
-      deployment:
+      aplication:
         type: text
         description: "deployment name"
         required: true
         options:
-          - "three-backend-celery"
-          - "three-backend-insurance"
-        default: "three-backend-insurance"
+          - "celery"
+          - "web"
+          - "flower"
+        default: "web"
 
 permissions:
   contents: read
   checks: write
 
 jobs:
-  exec:
+  configure:
     runs-on: ubuntu-latest
+    outputs:
+      app_name: ${{ steps.configure-environment.outputs.app_name }}
+      rg: ${{ steps.configure-environment.outputs.rg }}
+      cluster_name: ${{ steps.configure-environment.outputs.cluster_name }}
+    steps:
+      - id: configure-environment
+        name: Configure environment
+        run: |
+          environment="${{github.event.inputs.env}}"
+          app="${{ github.event.inputs.application }}"
+
+          #The env names in Azure are different than the environments defined in Github Actions so we have to map them. (i.e. development != dev)
+          case "$environment-$app" in
+            ##DEV##
+            "development-web") 
+              APPLICATION_NAME="agent-portal-dev-api"
+              RESOURCE_GROUP="agent-portal-dev-container-apps"
+              ;;
+            "development-celery") 
+              APPLICATION_NAME="agent-portal-dev-celery"
+              RESOURCE_GROUP="agent-portal-dev-container-apps"
+              ;;
+            "development-flower")
+              APPLICATION_NAME="agent-portal-dev-celery-flower"
+              RESOURCE_GROUP="agent-portal-dev-container-apps"
+              ;;
+            ##QA##
+            "qa-web") 
+              APPLICATION_NAME="three-backend-insurance" 
+              RESOURCE_GROUP="SOC-PreProdNC-RG"
+              CLUSTER_NAME="Soc-PreProd"
+              ;;
+            "qa-celery") 
+              APPLICATION_NAME="three-backend-celery"
+              RESOURCE_GROUP="SOC-PreProdNC-RG" 
+              CLUSTER_NAME="Soc-PreProd"
+              ;;
+            "qa-flower") 
+              APPLICATION_NAME="three-backend-flower" 
+              RESOURCE_GROUP="SOC-PreProdNC-RG" 
+              CLUSTER_NAME="Soc-PreProd"
+              ;;
+            ##TRAINING##
+            "training-web") 
+              APPLICATION_NAME="training-api" 
+              RESOURCE_GROUP="agent-portal-training-container-apps"              
+              ;;
+            "training-celery") 
+              APPLICATION_NAME="training-celery" 
+              RESOURCE_GROUP="agent-portal-training-container-apps"          
+              ;;
+            "training-flower") 
+              APPLICATION_NAME="training-celery-flower" 
+              RESOURCE_GROUP="agent-portal-training-container-apps"
+              ;;
+            ##Prod##
+            "production-web") 
+              APPLICATION_NAME="three-backend-insurance" 
+              RESOURCE_GROUP="SOC-ProdNC-RG" 
+              CLUSTER_NAME="S0C-Prod-K8s"            
+              ;;
+            "production-celery") 
+              APPLICATION_NAME="three-backend-celery" 
+              RESOURCE_GROUP="SOC-ProdNC-RG" 
+              CLUSTER_NAME="S0C-Prod-K8s"              
+              ;;
+            "production-flower") 
+              APPLICATION_NAME="three-backend-flower" 
+              RESOURCE_GROUP="SOC-ProdNC-RG" 
+              CLUSTER_NAME="S0C-Prod-K8sd"              
+              ;;
+            *) 
+          esac
+          
+          echo "app_name=$APPLICATION_NAME" >> $GITHUB_ENV
+          echo "rg=$RESOURCE_GROUP" >> $GITHUB_ENV
+          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_ENV
+          
+  exec_prod:
+    if: ${{ github.event.inputs.env }} == production || ${{ github.event.inputs.env }} == qa
+    runs-on: ubuntu-latest
+    needs: configure
+    environment: ${{ github.event.inputs.env }}
     permissions:
       id-token: write
       contents: read
       checks: write
     env:
-      RESOURCE_GROUP: "SOC-ProdNC-RG"
-      CLUSTER_NAME: "S0C-Prod-K8s"
       NAMESPACE: "socotra"
     steps:
       - name: Azure login
@@ -43,11 +130,28 @@ jobs:
           sudo az aks install-cli
 
           #Prepare KubeConfig
-          az aks get-credentials --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CLUSTER_NAME }} --overwrite-existing
+          az aks get-credentials --resource-group ${{ needs.configure.outputs.rg }} --name ${{ needs.configure.outputs.cluster_name }} --overwrite-existing
 
           #Use Kubelogin for authentication
           kubelogin convert-kubeconfig -l azurecli
-
       - name: Exec command on Pod
         run: |
-          kubectl exec -ti deployment/${{ github.event.inputs.deployment }} -n ${{ env.NAMESPACE }} -- python manage.py ${{ github.event.inputs.command }}
+          kubectl exec -ti deployment/${{ needs.configure.outputs.app_name }} -n ${{ env.NAMESPACE }} -- python manage.py ${{ github.event.inputs.command }}
+
+  exec_preprod:
+    if: ${{ github.event.inputs.env }} == development || ${{ github.event.inputs.env }} == training
+    runs-on: ubuntu-latest
+    needs: configure
+    environment: ${{ github.event.inputs.env }}
+    permissions:
+      id-token: write
+      contents: read
+      checks: write
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Exec command on Container App
+        run: |
+          az containerapp exec -n ${{ needs.configure.outputs.app_name }} -g ${{ needs.configure.outputs.rg }} --command python manage.py ${{ github.event.inputs.command }}
