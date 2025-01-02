@@ -13,7 +13,7 @@ on:
         description: command
         required: true
         default: "help"
-      aplication:
+      application:
         type: text
         description: "deployment name"
         required: true
