@@ -142,7 +142,7 @@ jobs:
 
   exec_preprod:
     if: contains(fromJSON('["development", "training"]'), github.event.inputs.env)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: configure
     environment: ${{ github.event.inputs.env }}
     permissions:
