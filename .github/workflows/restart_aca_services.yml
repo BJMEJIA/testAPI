@@ -32,19 +32,19 @@ jobs:
         id: configure-environment
         run: |
           RESOURCE_NAMES_MAP='{
-            'Web': 'api',
-            'Celery': "celery",
-            'Celery-Beat': 'celery-beat',
-            'Flower': 'celery-flower',
-            'LOB': 'lob',
-            'Stripe': 'stripe'
+            "Web": "api",
+            "Celery": "celery",
+            "Celery-Beat": "celery-beat",
+            "Flower": "celery-flower",
+            "LOB": "lob",
+            "Stripe": "stripe"
           }'
 
           ENVIROMENTS_MAP='{
-            'development': 'dev',
-            'qa': 'qa'
-            'training': 'training',
-            'production': 'prod'
+            "development": "dev",
+            "qa": "qa"
+            "training": "training",
+            "production": "prod"
           }'
           
           ENVIRONMENT="$(echo $ENVIRONMENTS_MAP | jq -r .[${{ github.event.inputs.env }}])"
