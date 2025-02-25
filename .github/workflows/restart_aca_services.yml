@@ -47,7 +47,7 @@ jobs:
             'production': 'prod'
           }'
           
-          ENVIRONMENT="$(echo $RESOURCE_NAMES_MAP | jq -r .[${{ github.event.inputs.env }}])"
+          ENVIRONMENT="$(echo $ENVIRONMENTS_MAP | jq -r .[${{ github.event.inputs.env }}])"
           APPLICATION="$(echo $RESOURCE_NAMES_MAP | jq -r .[${{ github.event.inputs.app }}])"
           
           RESOURCE_NAME="$ENVIRONMENT-$APPLICATION"
