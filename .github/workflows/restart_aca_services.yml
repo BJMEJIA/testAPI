@@ -40,7 +40,7 @@ jobs:
             "Stripe": "stripe"
           }'
 
-          ENVIROMENTS_MAP='{
+          ENVIRONMENTS_MAP='{
             "development": "dev",
             "qa": "qa",
             "training": "training",
