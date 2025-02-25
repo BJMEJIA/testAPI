@@ -42,7 +42,7 @@ jobs:
 
           ENVIROMENTS_MAP='{
             "development": "dev",
-            "qa": "qa"
+            "qa": "qa",
             "training": "training",
             "production": "prod"
           }'
