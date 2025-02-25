@@ -47,8 +47,8 @@ jobs:
             "production": "prod"
           }'
           
-          ENVIRONMENT="$(echo $ENVIRONMENTS_MAP | jq -r .[${{ github.event.inputs.env }}])"
-          APPLICATION="$(echo $RESOURCE_NAMES_MAP | jq -r .[${{ github.event.inputs.app }}])"
+          ENVIRONMENT="$(echo $ENVIRONMENTS_MAP | jq -r .[\"${{ github.event.inputs.env }}\"])"
+          APPLICATION="$(echo $RESOURCE_NAMES_MAP | jq -r .[\"${{ github.event.inputs.app }}\"])"
           
           RESOURCE_NAME="$ENVIRONMENT-$APPLICATION"
           RESOURCE_GROUP="agent-portal-$ENVIRONMENT-container-apps"
