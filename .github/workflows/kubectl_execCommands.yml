@@ -9,18 +9,18 @@ on:
         required: true
         default: 'development'
       command:
-        type: text
+        type: string
         description: command
         required: true
         default: "help"
-      application:
-        type: text
-        description: "deployment name"
+      app:
+        type: choice
+        description: "Application"
         required: true
         options:
-          - "celery"
-          - "web"
-          - "flower"
+          - "Celery"
+          - "Web"
+          - "Flower"
         default: "web"
 
 permissions:
@@ -29,89 +29,41 @@ permissions:
 
 jobs:
   configure:
+    if: contains(fromJSON('["development", "qa", "training"]'), github.event.inputs.env)
     runs-on: ubuntu-latest
     outputs:
-      app_name: ${{ steps.configure-environment.outputs.app_name }}
-      rg: ${{ steps.configure-environment.outputs.rg }}
-      cluster_name: ${{ steps.configure-environment.outputs.cluster_name }}
+      RESOURCE_NAME: ${{ steps.configure-environment.outputs.app_name }}
+      RESOURCE_GROUP: ${{ steps.configure-environment.outputs.rg }}
     steps:
       - id: configure-environment
         name: Configure environment
         run: |
-          environment="${{github.event.inputs.env}}"
-          app="${{ github.event.inputs.application }}"
-
-          #The env names in Azure are different than the environments defined in Github Actions so we have to map them. (i.e. development != dev)
-          case "$environment-$app" in
-            ##DEV##
-            "development-web") 
-              APPLICATION_NAME="agent-portal-dev-api"
-              RESOURCE_GROUP="agent-portal-dev-container-apps"
-              ;;
-            "development-celery") 
-              APPLICATION_NAME="agent-portal-dev-celery"
-              RESOURCE_GROUP="agent-portal-dev-container-apps"
-              ;;
-            "development-flower")
-              APPLICATION_NAME="agent-portal-dev-celery-flower"
-              RESOURCE_GROUP="agent-portal-dev-container-apps"
-              ;;
-            ##QA##
-            "qa-web") 
-              APPLICATION_NAME="three-backend-insurance" 
-              RESOURCE_GROUP="SOC-PreProdNC-RG"
-              CLUSTER_NAME="Soc-PreProd"
-              ;;
-            "qa-celery") 
-              APPLICATION_NAME="three-backend-celery"
-              RESOURCE_GROUP="SOC-PreProdNC-RG" 
-              CLUSTER_NAME="Soc-PreProd"
-              ;;
-            "qa-flower") 
-              APPLICATION_NAME="three-backend-flower" 
-              RESOURCE_GROUP="SOC-PreProdNC-RG" 
-              CLUSTER_NAME="Soc-PreProd"
-              ;;
-            ##TRAINING##
-            "training-web") 
-              APPLICATION_NAME="training-api" 
-              RESOURCE_GROUP="agent-portal-training-container-apps"              
-              ;;
-            "training-celery") 
-              APPLICATION_NAME="training-celery" 
-              RESOURCE_GROUP="agent-portal-training-container-apps"          
-              ;;
-            "training-flower") 
-              APPLICATION_NAME="training-celery-flower" 
-              RESOURCE_GROUP="agent-portal-training-container-apps"
-              ;;
-            ##Prod##
-            "production-web") 
-              APPLICATION_NAME="three-backend-insurance" 
-              RESOURCE_GROUP="SOC-ProdNC-RG" 
-              CLUSTER_NAME="S0C-Prod-K8s"            
-              ;;
-            "production-celery") 
-              APPLICATION_NAME="three-backend-celery" 
-              RESOURCE_GROUP="SOC-ProdNC-RG" 
-              CLUSTER_NAME="S0C-Prod-K8s"              
-              ;;
-            "production-flower") 
-              APPLICATION_NAME="three-backend-flower" 
-              RESOURCE_GROUP="SOC-ProdNC-RG" 
-              CLUSTER_NAME="S0C-Prod-K8s"              
-              ;;
-            *) 
-              echo "Environment not valid"
-              exit 1
-          esac
+          RESOURCE_NAMES_MAP='{
+            "Web": "api",
+            "Celery": "celery",
+            "Flower": "celery-flower",
+          }'
           
-          echo "app_name=$APPLICATION_NAME" >> $GITHUB_OUTPUT
-          echo "rg=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
-          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+          ENVIRONMENTS_MAP='{
+            "development": "dev",
+            "qa": "qa",
+            "training": "training",
+            "production": "prod"
+          }'
           
-  exec_prod:
-    if: contains(fromJSON('["production", "qa"]'), github.event.inputs.env)
+          ENVIRONMENT="$(echo $ENVIRONMENTS_MAP | jq -r .[\"${{ github.event.inputs.env }}\"])"
+          APPLICATION="$(echo $RESOURCE_NAMES_MAP | jq -r .[\"${{ github.event.inputs.app }}\"])"
+          
+          RESOURCE_NAME="$ENVIRONMENT-$APPLICATION"
+          RESOURCE_GROUP="agent-portal-$ENVIRONMENT-container-apps"
+          
+          echo "RESOURCE_NAME=$RESOURCE_NAME" >> $GITHUB_OUTPUT
+          echo "RESOURCE_GROUP=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "Selected resource: $RESOURCE_NAME; RG: $RESOURCE_GROUP"
+          
+  exec_cluster:
+    #TODO: Deprecate this job when Production is managed by Terraform.
+    if: contains(fromJSON('["production"]'), github.event.inputs.env)
     runs-on: ubuntu-latest
     needs: configure
     environment: ${{ github.event.inputs.env }}
@@ -120,28 +72,44 @@ jobs:
       contents: read
       checks: write
     env:
-      NAMESPACE: "socotra"
+      CLUSTER_NAME: S0C-Prod-K8s
+      RESOURCE_GROUP: SOC-ProdNC-RG
+      NAMESPACE: socotra
     steps:
+      - name: Configure
+        id: configure
+        run: |
+          DEPLOYMENT_NAME_MAP='{
+            "Web": "three-backend-insurance",
+            "Celery": "three-backend-celery",
+            "Flower": "three-backend-flower",
+          }'
+
+          DEPLOYMENT_NAME="$(echo $DEPLOYMENT_NAMES_MAP | jq -r .[\"${{ github.event.inputs.app }}\"])"
+
+          echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+
       - name: Azure login
         uses: azure/login@v2
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
       - name: Prepare Agent
         run: |
           #install kubectl and kubelogin
           sudo az aks install-cli
 
           #Prepare KubeConfig
-          az aks get-credentials --resource-group ${{ needs.configure.outputs.rg }} --name ${{ needs.configure.outputs.cluster_name }} --overwrite-existing
+          az aks get-credentials --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.CLUSTER_NAME }} --overwrite-existing
 
           #Use Kubelogin for authentication
           kubelogin convert-kubeconfig -l azurecli
+          
       - name: Exec command on Pod
         run: |
-          kubectl exec -ti deployment/${{ needs.configure.outputs.app_name }} -n ${{ env.NAMESPACE }} -- python manage.py ${{ github.event.inputs.command }}
+          kubectl exec -ti deployment/${{ steps.configure.outputs.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -- /bin/bash -c "python manage.py ${{ github.event.inputs.command }}"
 
-  exec_preprod:
-    if: contains(fromJSON('["development", "training"]'), github.event.inputs.env)
+  exec_container_app:
     runs-on: windows-latest
     needs: configure
     environment: ${{ github.event.inputs.env }}
@@ -156,4 +124,4 @@ jobs:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
       - name: Exec command on Container App
         run: |
-          az containerapp exec -n ${{ needs.configure.outputs.app_name }} -g ${{ needs.configure.outputs.rg }} --command "python manage.py ${{ github.event.inputs.command }}"
+          az containerapp exec -n ${{ needs.configure.outputs.RESOURCE_NAME }} -g ${{ needs.configure.outputs.RESOURCE_GROUP }} --command "python manage.py ${{ github.event.inputs.command }}"
