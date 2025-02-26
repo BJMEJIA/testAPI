@@ -98,7 +98,7 @@ jobs:
           DEPLOYMENT_NAMES_MAP='{
             "Web": "three-backend-insurance",
             "Celery": "three-backend-celery",
-            "Flower": "three-backend-flower",
+            "Flower": "three-backend-flower"
           }'
 
           DEPLOYMENT_NAME="$(echo $DEPLOYMENT_NAMES_MAP | jq -r .[\"${{ github.event.inputs.app }}\"])"
