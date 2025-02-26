@@ -41,7 +41,7 @@ jobs:
           RESOURCE_NAMES_MAP='{
             "Web": "api",
             "Celery": "celery",
-            "Flower": "celery-flower",
+            "Flower": "celery-flower"
           }'
           
           ENVIRONMENTS_MAP='{
@@ -60,12 +60,28 @@ jobs:
           echo "RESOURCE_NAME=$RESOURCE_NAME" >> $GITHUB_OUTPUT
           echo "RESOURCE_GROUP=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "Selected resource: $RESOURCE_NAME; RG: $RESOURCE_GROUP"
+
+  exec_container_app:
+    runs-on: windows-latest
+    needs: configure
+    environment: ${{ github.event.inputs.env }}
+    permissions:
+      id-token: write
+      contents: read
+      checks: write
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Exec command on Container App
+        run: |
+          az containerapp exec -n ${{ needs.configure.outputs.RESOURCE_NAME }} -g ${{ needs.configure.outputs.RESOURCE_GROUP }} --command "python manage.py ${{ github.event.inputs.command }}"
           
   exec_cluster:
     #TODO: Deprecate this job when Production is managed by Terraform.
     if: contains(fromJSON('["production"]'), github.event.inputs.env)
     runs-on: ubuntu-latest
-    needs: configure
     environment: ${{ github.event.inputs.env }}
     permissions:
       id-token: write
@@ -104,24 +120,9 @@ jobs:
 
           #Use Kubelogin for authentication
           kubelogin convert-kubeconfig -l azurecli
-          
+
       - name: Exec command on Pod
         run: |
           kubectl exec -ti deployment/${{ steps.configure.outputs.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }} -- /bin/bash -c "python manage.py ${{ github.event.inputs.command }}"
 
-  exec_container_app:
-    runs-on: windows-latest
-    needs: configure
-    environment: ${{ github.event.inputs.env }}
-    permissions:
-      id-token: write
-      contents: read
-      checks: write
-    steps:
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-      - name: Exec command on Container App
-        run: |
-          az containerapp exec -n ${{ needs.configure.outputs.RESOURCE_NAME }} -g ${{ needs.configure.outputs.RESOURCE_GROUP }} --command "python manage.py ${{ github.event.inputs.command }}"
+
