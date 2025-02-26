@@ -32,8 +32,8 @@ jobs:
     if: contains(fromJSON('["development", "qa", "training"]'), github.event.inputs.env)
     runs-on: ubuntu-latest
     outputs:
-      RESOURCE_NAME: ${{ steps.configure-environment.outputs.app_name }}
-      RESOURCE_GROUP: ${{ steps.configure-environment.outputs.rg }}
+      RESOURCE_NAME: ${{ steps.configure-environment.outputs.RESOURCE_NAME }}
+      RESOURCE_GROUP: ${{ steps.configure-environment.outputs.RESOURCE_GROUP }}
     steps:
       - id: configure-environment
         name: Configure environment
