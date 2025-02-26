@@ -95,7 +95,7 @@ jobs:
       - name: Configure
         id: configure
         run: |
-          DEPLOYMENT_NAME_MAP='{
+          DEPLOYMENT_NAMES_MAP='{
             "Web": "three-backend-insurance",
             "Celery": "three-backend-celery",
             "Flower": "three-backend-flower",
