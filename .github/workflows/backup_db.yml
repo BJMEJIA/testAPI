@@ -25,7 +25,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
             ENVIRONMENTS=$(jq -cn '["development", "production"]')
           else
-            ENVIRONMENTS=$(jq -cn '["${{ github.event.inputs.env }}"]')
+            ENVIRONMENTS=$(jq -cn '["${{ github.event.inputs.env }}"]') 
           fi
 
           echo "environments=$ENVIRONMENTS" >> $GITHUB_OUTPUT
@@ -98,6 +98,7 @@ jobs:
       - id: back_up_db
         name: Back up Database
         run: |
+
           # Generate a timestamp
           TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
@@ -107,9 +108,11 @@ jobs:
           # Export the PostgreSQL password to avoid being prompted
           export PGPASSWORD=${{ secrets.pg_password }}
 
+          # Authoriza AzCopy
+          export AZCOPY_AUTO_LOGIN_TYPE=AZCLI
+          
           # PostgreSQL Backup Command
-          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} | azcopy copy "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME" --from-to PipeBlob
-
+          pg_dump -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} | azcopy copy "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME" --from-to PipeBlob
 
           # Verify the backup
           if [ $? -eq 0 ]; then
