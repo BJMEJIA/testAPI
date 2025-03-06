@@ -58,7 +58,7 @@ jobs:
 
           az postgres flexible-server firewall-rule create \
           --resource-group ${{vars.resource_group}} \
-          --server-name ${{ vars.server_name }} \
+          --name ${{ vars.server_name }} \
           --rule-name "GH_Runner_IP" \
           --start-ip-address ${{ steps.get_runner_publicip.outputs.public_ip }} \
           --end-ip-address ${{ steps.get_runner_publicip.outputs.public_ip }}
@@ -126,5 +126,5 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
           --resource-group "${{vars.resource_group}}" \
-          --server-name "${{vars.server_name}}" \
-          --name "GH_Runner_IP"
+          --name "${{vars.server_name}}" \
+          --rule-name "GH_Runner_IP"
