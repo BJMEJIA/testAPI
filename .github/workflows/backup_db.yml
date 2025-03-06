@@ -16,7 +16,7 @@ jobs:
   configure:
     runs-on: ubuntu-latest
     outputs: 
-      environments: ${{ steps.configure-matrix.outputs }}
+      environments: ${{ steps.configure-matrix.outputs.environments }}
     steps:
       - id: configure-matrix
         name: Configure Environment Matrix
