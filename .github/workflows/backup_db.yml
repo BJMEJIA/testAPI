@@ -25,7 +25,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
             ENVIRONMENTS=$(jq -cn '["development", "production"]')
           else
-            ENVIRONMENTS=$(jq -cn '["${{ github.event.inputs.env }}"]') 
+            ENVIRONMENTS=$(jq -cn '["${{ github.event.inputs.env }}"]')
+          fi
 
           echo "environments=$ENVIRONMENTS" >> $GITHUB_OUTPUT
 
