@@ -19,6 +19,7 @@ jobs:
       environments: ${{ steps.configure-matrix.outputs }}
     steps:
       - id: configure-matrix
+        name: Configure Environment Matrix
         run: |
           #Backed up DBs on schedule: DEV and PROD
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
@@ -37,6 +38,7 @@ jobs:
     environment: ${{ matrix.env }}
     steps:
       - id: get_runner_publicip
+        name: Get Runner's IP
         run: |
           # DBs are locked by a whitelist. To get the backup file, dinamically whitelisting the runner's ip is needed
           PUBLIC_IP=$(curl https://ifconfig.me/ip)
@@ -49,6 +51,7 @@ jobs:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
       - id: open_db_firewall
+        name: Add IP to whitelist
         run: |
           #Add the public Ip of the runner to the whitelist.
 
@@ -60,6 +63,7 @@ jobs:
           --end-ip-address ${{ steps.get_runner_publicip.outputs.public_ip }}
 
       - id: update_pg_dump
+        name: Upgade pg_dump
         run: |
           #The postgres version of the client must the same or higher than the one running on the DB. (As of now, version 15)
 
@@ -91,6 +95,7 @@ jobs:
           fi
 
       - id: back_up_db
+        name: Back up Database
         run: |
           # Generate a timestamp
           TIMESTAMP=$(date +"%Y%m%d%H%M%S")
@@ -116,10 +121,9 @@ jobs:
           unset PGPASSWORD
 
       - id: close_db_firewall
+        name: Remove Ip from whitelist
         run: |
           az postgres flexible-server firewall-rule delete \
           --resource-group "${{vars.resource_group}}" \
           --server-name "${{vars.server_name}}" \
           --name "GH_Runner_IP"
-    
-      
