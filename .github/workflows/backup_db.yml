@@ -125,4 +125,5 @@ jobs:
           az postgres flexible-server firewall-rule delete \
           --resource-group "${{vars.resource_group}}" \
           --name "${{vars.server_name}}" \
-          --rule-name "GH_Runner_IP"
+          --rule-name "GH_Runner_IP" \
+          --yes
