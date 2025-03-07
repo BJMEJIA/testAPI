@@ -97,6 +97,10 @@ jobs:
 
       - id: back_up_db
         name: Back up Database
+        env:
+          PGPASSWORD: ${{ secrets.pg_password }} #pg_dump does not allow inline passwords
+          AZCOPY_AUTO_LOGIN_TYPE: AZCLI #To use the GitHub Actions permissions instead of a SAS Token
+          AZCOPY_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         run: |
 
           # Generate a timestamp
@@ -104,26 +108,18 @@ jobs:
 
           # Construct the backup file name with timestamp
           BACKUP_FILE_NAME="${{ vars.db_name }}_backup_${TIMESTAMP}.sql"
-
-          # Export the PostgreSQL password to avoid being prompted
-          export PGPASSWORD=${{ secrets.pg_password }}
-
-          # Authoriza AzCopy
-          export AZCOPY_AUTO_LOGIN_TYPE=AZCLI
           
           # PostgreSQL Backup Command
           pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron > $BACKUP_FILE_NAME 
           
           azcopy copy "$BACKUP_FILE_NAME" "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME"
+
           # Verify the backup
           if [ $? -eq 0 ]; then
             echo "Backup completed successfully"
           else
             echo "Backup failed"
           fi
-
-          # Unset the PostgreSQL password
-          unset PGPASSWORD
 
       - id: close_db_firewall
         name: Remove Ip from whitelist
