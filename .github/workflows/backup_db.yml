@@ -110,9 +110,7 @@ jobs:
           BACKUP_FILE_NAME="${{ vars.db_name }}_backup_${TIMESTAMP}.sql"
           
           # PostgreSQL Backup Command
-          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron > $BACKUP_FILE_NAME 
-          
-          azcopy copy "$BACKUP_FILE_NAME" "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME"
+          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron | azcopy copy "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME" --from-to PipeBlob
 
           # Verify the backup
           if [ $? -eq 0 ]; then
