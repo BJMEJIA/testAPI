@@ -94,8 +94,8 @@ jobs:
             BACKUP_FILE_NAME=$(az storage blob list --auth-mode login -c "backup" --account-name "${{ vars.storage_account }}" --query "reverse(sort_by([?contains(properties.creationTime, '${{ github.event.inputs.date }}')], &properties.creationTime))[0].name")
 
             if [[ -n "$BACKUP_FILE_NAME" ]]; then
-                echo "backup_file_name=$BACKUP_FILE_NAME" >> GITHUB_OUTPUT
                 echo "Using $BACKUP_FILE_NAME as the backup file"
+                echo "backup_file_name=$BACKUP_FILE_NAME" >> GITHUB_OUTPUT
             else
                 echo "Database backup file not found"; exit 1
             fi
@@ -133,7 +133,7 @@ jobs:
             if [ $? -eq 0 ]; then
               echo "Restore completed successfully"
             else
-              echo "Restore failed"
+              echo "Restore failed"; exit 1
             fi
             
             # Terminate all active connections to the old database
