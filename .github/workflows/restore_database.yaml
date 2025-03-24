@@ -59,8 +59,8 @@ jobs:
         run: |
           #Add the public Ip of the runner to the whitelist.
           az postgres flexible-server firewall-rule create \
-          --resource-group ${{vars.db_resource_group}} \
-          --name ${{ vars.db_server_name }} \
+          --resource-group ${{vars.resource_group}} \
+          --name ${{ vars.server_name }} \
           --rule-name "GH_Runner_IP" \
           --start-ip-address ${{ steps.get_runner_publicip.outputs.public_ip }} \
           --end-ip-address ${{ steps.get_runner_publicip.outputs.public_ip }}
@@ -72,8 +72,8 @@ jobs:
           # Get the installed PostgreSQL client version (major version only)
           INSTALLED_VERSION=$(psql --version 2>/dev/null | awk '{print $3}' | cut -d '.' -f1)
           # Compare the installed version with the minimum required version
-          if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" -ge "${{vars.azure_db_version}}" ]]; then
-              echo "PostgreSQL client version $INSTALLED_VERSION is already installed (>=${{vars.azure_db_version}}). No update required."
+          if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" -ge "15" ]]; then
+              echo "PostgreSQL client version $INSTALLED_VERSION is already installed (>=15). No update required."
               exit 0
           else
               echo "Updating PostgreSQL client to the latest version..."
@@ -113,10 +113,10 @@ jobs:
             
             # Verify the configuration
             if [ $? -eq 0 ]; then
-                echo "Configuration completed successfully"
+              echo "Configuration completed successfully"
             else
-                echo "Configuration failed"
-            exit 1
+              echo "Configuration failed"
+              exit 1
             fi
             
             # Restore the DB
@@ -126,14 +126,13 @@ jobs:
                 --name ${{ steps.get_backup_name.outputs.backup_file_name }} \
                 --auth-mode login \
                 --file - \
-                | head -n 20
-            #| psql $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}}
+            | psql $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}}
             
             # Verify the backup
             if [ $? -eq 0 ]; then
-            echo "Restore completed successfully"
+              echo "Restore completed successfully"
             else
-            echo "Restore failed"
+              echo "Restore failed"
             fi
             
             # Terminate all active connections to the old database
@@ -155,7 +154,7 @@ jobs:
         run: |
         
           az postgres flexible-server firewall-rule delete \
-          --resource-group "${{vars.db_resource_group}}" \
-          --name "${{vars.db_server_name}}" \
+          --resource-group "${{vars.resource_group}}" \
+          --name "${{vars.server_name}}" \
           --rule-name "GH_Runner_IP" \
           --yes
