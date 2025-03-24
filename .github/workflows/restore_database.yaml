@@ -109,7 +109,7 @@ jobs:
             OLD_DB_NAME="${DB_NAME}_old"
             
             #Create a new DB
-            createdb $NEW_DB_NAME -h $PG_HOST -p 5432 -U $PG_USER
+            createdb $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}}
             
             # Verify the configuration
             if [ $? -eq 0 ]; then
@@ -121,13 +121,13 @@ jobs:
             
             # Restore the DB
             az storage blob download \
-                --account-name ${{ vars.db_backup_storage_account }} \
-                --container-name ${{ vars.db_backup_container_name }} \
+                --account-name ${{ vars.storage_account }} \
+                --container-name backup \
                 --name ${{ steps.get_backup_name.outputs.backup_file_name }} \
                 --auth-mode login \
                 --file - \
                 | head -n 20
-            #| psql $NEW_DB_NAME -h $PG_HOST -p 5432 -U $PG_USER
+            #| psql $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}}
             
             # Verify the backup
             if [ $? -eq 0 ]; then
@@ -137,21 +137,18 @@ jobs:
             fi
             
             # Terminate all active connections to the old database
-            psql -U $PG_USER -h $PG_HOST -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$DB_NAME' AND pid <> pg_backend_pid();"
+            psql -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$DB_NAME' AND pid <> pg_backend_pid();"
             
             #Rename old DB 
-            psql -U $PG_USER -d postgres -h $PG_HOST -c "ALTER DATABASE $DB_NAME RENAME TO $OLD_DB_NAME;"
+            psql -d postgres -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -c "ALTER DATABASE $DB_NAME RENAME TO $OLD_DB_NAME;"
             echo "Old Database renamed to $OLD_DB_NAME"
             
             # Terminate all active connections to the new database
-            psql -U $PG_USER -h $PG_HOST -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$NEW_DB_NAME' AND pid <> pg_backend_pid();"
+            psql -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$NEW_DB_NAME' AND pid <> pg_backend_pid();"
             
             #Rename new DB
-            psql -U $PG_USER -d postgres -h $PG_HOST -c "ALTER DATABASE $NEW_DB_NAME RENAME TO $DB_NAME;"
+            psql -d postgres -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -c "ALTER DATABASE $NEW_DB_NAME RENAME TO $DB_NAME;"
             echo "New Database renamed to $DB_NAME"
-            
-            # Unset the PostgreSQL password
-            unset PGPASSWORD
           
       - id: close_db_firewall
         name: Remove Ip from whitelist
