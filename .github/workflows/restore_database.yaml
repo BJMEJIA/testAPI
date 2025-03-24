@@ -95,7 +95,7 @@ jobs:
 
             if [[ -n "$BACKUP_FILE_NAME" ]]; then
                 echo "Using $BACKUP_FILE_NAME as the backup file"
-                echo "backup_file_name=$BACKUP_FILE_NAME" >> GITHUB_OUTPUT
+                echo "backup_file_name=$BACKUP_FILE_NAME" >> $GITHUB_OUTPUT
             else
                 echo "Database backup file not found"; exit 1
             fi
