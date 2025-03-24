@@ -99,16 +99,18 @@ jobs:
         name: Back up Database
         env:
           PGPASSWORD: ${{ secrets.pg_password }} #pg_dump does not allow inline passwords
+          AZCOPY_AUTO_LOGIN_TYPE: AZCLI #To use the GitHub Actions permissions instead of a SAS Token. NOTE: Az cli does not allow streaming data to blobs so azcopy is being used instead.
+          AZCOPY_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         run: |
-
           # Generate a timestamp
           TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-
           # Construct the backup file name with timestamp
           BACKUP_FILE_NAME="${{ vars.db_name }}_backup_${TIMESTAMP}.sql"
           
-          # PostgreSQL Backup Command
-          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron | az storage blob upload --data @- -c "${{ vars.db_backup_container_name }}" --account-name "${{ vars.db_backup_storage_account }}"
+          # PostgreSQL Backup
+          #NOTE: Streaming data directly from the database to the storage account prevents excessive disk usage on the runner, mitigating the risk of running out of local storage
+          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron | azcopy copy "https://${{ vars.db_backup_storage_account }}.blob.core.windows.net/${{ vars.db_backup_container_name }}/$BACKUP_FILE_NAME" --from-to PipeBlob
+          
           # Verify the backup
           if [ $? -eq 0 ]; then
             echo "Backup completed successfully"
