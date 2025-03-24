@@ -128,7 +128,8 @@ jobs:
                 --container-name backup \
                 --name ${{ steps.get_backup_name.outputs.backup_file_name }} \
                 --auth-mode login \
-            | psql $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}}
+                --no-progress true
+            | psql $NEW_DB_NAME -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -f -
             
             # Verify the backup
             if [ $? -eq 0 ]; then
