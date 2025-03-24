@@ -104,7 +104,7 @@ jobs:
         name: Back up Database
         env:
           PGPASSWORD: ${{ secrets.pg_password }} #pg_dump does not allow inline passwords
-          DB_NAME: ${{ github.event.inputs.env }}
+          DB_NAME: ${{ github.event.inputs.db }}
         run: |            
             NEW_DB_NAME="${DB_NAME}_new" 
             OLD_DB_NAME="${DB_NAME}_old"
