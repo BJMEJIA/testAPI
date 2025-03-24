@@ -109,7 +109,7 @@ jobs:
           
           # PostgreSQL Backup
           #NOTE: Streaming data directly from the database to the storage account prevents excessive disk usage on the runner, mitigating the risk of running out of local storage
-          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron | azcopy copy "https://${{ vars.db_backup_storage_account }}.blob.core.windows.net/${{ vars.db_backup_container_name }}/$BACKUP_FILE_NAME" --from-to PipeBlob
+          pg_dump -v -h ${{ vars.pg_host }} -p 5432 -U ${{ secrets.pg_user}} -d ${{ vars.db_name }} -N cron | azcopy copy "https://${{ vars.storage_account }}.blob.core.windows.net/backup/$BACKUP_FILE_NAME" --from-to PipeBlob
           
           # Verify the backup
           if [ $? -eq 0 ]; then
