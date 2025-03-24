@@ -91,10 +91,11 @@ jobs:
         name: Get Backup Name
         run: |
             #Using creation time of the blob file. If there are multiple files created the same day, the latest is picked.
-            BACKUP_FILE_NAME=$(az storage blob list -c "backup" --account-name "${{ vars.storage_account }}" --query "reverse(sort_by([?contains(properties.creationTime, '${{ github.event.inputs.date }}')], &properties.creationTime))[0].name")
+            BACKUP_FILE_NAME=$(az storage blob list --auth-mode login -c "backup" --account-name "${{ vars.storage_account }}" --query "reverse(sort_by([?contains(properties.creationTime, '${{ github.event.inputs.date }}')], &properties.creationTime))[0].name")
 
             if [[ -n "$BACKUP_FILE_NAME" ]]; then
                 echo "backup_file_name=$BACKUP_FILE_NAME" >> GITHUB_OUTPUT
+                echo "Using $BACKUP_FILE_NAME as the backup file"
             else
                 echo "Database backup file not found"; exit 1
             fi
